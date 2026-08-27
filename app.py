@@ -1,7 +1,8 @@
-# 1. Import Streamlit เป็นตัวแรกสุด
 import streamlit as st
 
-# 2. ⚡ เรียกใช้ st.set_page_config ทันทีที่บรรทัดนี้! (ก่อน import ตัวอื่น)
+# =========================================================
+# 1. PAGE CONFIG
+# =========================================================
 st.set_page_config(
     page_title="NOTAM AREA GENERATOR",
     page_icon="✈️",
@@ -9,7 +10,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 3. จากนั้นค่อย Import ไลบรารีตัวอื่นๆ ทั้งหมดตามลงมา
 import io
 import zipfile
 import pandas as pd
@@ -19,78 +19,110 @@ import simplekml
 import shapefile
 
 # =========================================================
-# 4. CUSTOM CSS (แต่ง UI ตาม Stitch Dark Aviation Theme)
+# 2. ADVANCED CUSTOM CSS (ถอดแบบ Stitch 100%)
 # =========================================================
 st.markdown("""
     <style>
-    /* Dark Theme Background */
-    .stApp {
-        background-color: #0B0E14;
-        color: #E6EDF3;
+    /* 1. พื้นหลังหลักสีดำเข้มแบบ Aviation Control Room */
+    .stAppViewContainer, .stApp {
+        background-color: #0A0D12 !important;
+        color: #C9D1D9 !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
     }
     
-    /* Sidebar Styling */
+    /* ซ่อน Header และ Footer มาตรฐานของ Streamlit */
+    header[data-testid="stHeader"] { display: none !important; }
+    footer { display: none !important; }
+    
+    /* 2. Sidebar ฝั่งซ้ายสุดเนี๊ยบ */
     section[data-testid="stSidebar"] {
-        background-color: #161B22 !important;
-        border-right: 1px solid #30363D;
+        background-color: #11151C !important;
+        border-right: 1px solid #1F242D !important;
+        width: 260px !important;
     }
     
-    /* Inputs Styling */
+    /* 3. กล่อง Project Details ฝั่งซ้าย (Floating Glassmorphism Card) */
+    div[data-testid="column"]:first-child {
+        background: #11151C !important;
+        border: 1px solid #1F293D !important;
+        border-radius: 12px !important;
+        padding: 24px !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    /* 4. หัวข้อกล่อง & ตัวหนังสือ */
+    .panel-header {
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        letter-spacing: 1.5px !important;
+        color: #8B949E !important;
+        margin-bottom: 16px !important;
+        text-transform: uppercase;
+    }
+    
+    .main-header {
+        font-size: 20px !important;
+        font-weight: 700 !important;
+        letter-spacing: 1px !important;
+        color: #FFFFFF !important;
+        margin-bottom: 24px !important;
+    }
+    
+    /* 5. Custom Input Fields ให้มืดเนี๊ยบสไตล์ Dashboard */
     .stTextInput input, .stSelectbox div[data-baseweb="select"], .stNumberInput input {
         background-color: #161B22 !important;
-        color: #FFFFFF !important;
+        color: #58A6FF !important;
         border: 1px solid #30363D !important;
         border-radius: 6px !important;
+        font-family: monospace !important;
     }
     
-    /* Primary Button Styling */
-    .stButton > button {
-        width: 100%;
-        background-color: #3B82F6 !important;
-        color: #FFFFFF !important;
-        border: none !important;
-        border-radius: 8px !important;
-        padding: 10px 20px !important;
+    .stTextInput label, .stSelectbox label, .stNumberInput label {
+        color: #8B949E !important;
+        font-size: 12px !important;
         font-weight: 600 !important;
-        font-size: 15px !important;
-        box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39) !important;
+    }
+
+    /* 6. ปุ่ม Generate Flight Area สีกระแทกตาแบบ Neon Blue */
+    .stButton > button {
+        width: 100% !important;
+        background: linear-gradient(185deg, #3B82F6 0%, #1D4ED8 100%) !important;
+        color: #FFFFFF !important;
+        border: 1px solid #60A5FA !important;
+        border-radius: 8px !important;
+        padding: 12px 20px !important;
+        font-weight: 600 !important;
+        font-size: 14px !important;
+        letter-spacing: 0.5px !important;
+        box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4) !important;
+        margin-top: 15px !important;
         transition: all 0.2s ease-in-out !important;
     }
+    
     .stButton > button:hover {
-        background-color: #2563EB !important;
-        transform: translateY(-2px);
+        background: linear-gradient(185deg, #60A5FA 0%, #2563EB 100%) !important;
+        box-shadow: 0 6px 25px rgba(59, 130, 246, 0.6) !important;
+        transform: translateY(-1px) !important;
     }
-    
-    /* Title Header */
-    .main-title {
-        font-size: 22px;
-        font-weight: 700;
-        letter-spacing: 1.2px;
-        color: #FFFFFF;
-        margin-bottom: 20px;
-    }
-    
-    /* Metric Cards */
-    div[data-testid="stMetricValue"] {
-        color: #60A5FA !important;
+
+    /* 7. ปรับตารางข้อมูลพิกัดข้างล่าง */
+    div[data-testid="stDataFrame"] {
+        background-color: #11151C !important;
+        border: 1px solid #1F242D !important;
+        border-radius: 8px !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 3. HELPER FUNCTIONS (ฟังก์ชันคำนวณพิกัดและสร้างไฟล์)
+# 3. HELPER FUNCTIONS
 # =========================================================
-
 def parse_l7018(sheet_name):
-    """คำนวณพิกัด 4 มุมจากชื่อระวาง L7018 (ตัวอย่างระบบพิกัดจำลองเพื่อการแสดงผล)"""
     try:
         clean_name = sheet_name.replace(" ", "").replace("-", "")
         code = int(clean_name) if clean_name.isdigit() else 47361
-        
-        # คำนวณ Grid พิกัดคร่าวๆ อิงตามรหัสระวาง
         lat_base = 13.0 + (code % 100) * 0.25
         lon_base = 100.0 + ((code // 100) % 100) * 0.25
-        
         return {
             "SW": (lat_base, lon_base),
             "NW": (lat_base + 0.25, lon_base),
@@ -99,17 +131,13 @@ def parse_l7018(sheet_name):
             "CENTER": (lat_base + 0.125, lon_base + 0.125)
         }
     except Exception:
-        # ค่า Default กรณีฉุกเฉิน (กทม. และปริมณฑล)
         return {
-            "SW": (13.75, 100.50),
-            "NW": (14.00, 100.50),
-            "NE": (14.00, 100.75),
-            "SE": (13.75, 100.75),
+            "SW": (13.75, 100.50), "NW": (14.00, 100.50),
+            "NE": (14.00, 100.75), "SE": (13.75, 100.75),
             "CENTER": (13.875, 100.625)
         }
 
 def dd_to_dms(dd, is_lat=True):
-    """แปลง Decimal Degree เป็น DMS Format สำหรับรายงาน NOTAM"""
     direction = ("N" if dd >= 0 else "S") if is_lat else ("E" if dd >= 0 else "W")
     dd = abs(dd)
     degrees = int(dd)
@@ -118,7 +146,6 @@ def dd_to_dms(dd, is_lat=True):
     return f"{degrees:02d}°{minutes:02d}'{seconds:04.1f}\"{direction}"
 
 def generate_kml(proj_name, coords):
-    """สร้างไฟล์ KML"""
     kml = simplekml.Kml()
     polygon_coords = [
         (coords["SW"][1], coords["SW"][0]),
@@ -128,31 +155,23 @@ def generate_kml(proj_name, coords):
         (coords["SW"][1], coords["SW"][0])
     ]
     pol = kml.newpolygon(name=proj_name, outerboundaryis=polygon_coords)
-    pol.style.polystyle.color = simplekml.Color.changealphaint(100, simplekml.Color.blue)
-    pol.style.linestyle.color = simplekml.Color.blue
+    pol.style.polystyle.color = simplekml.Color.changealphaint(80, simplekml.Color.blue)
+    pol.style.linestyle.color = simplekml.Color.cyan
     pol.style.linestyle.width = 3
     return kml.kml()
 
 def generate_zip_package(proj_name, coords, df_summary):
-    """รวมไฟล์ KML, Excel และ Shapefile เป็นไฟล์ ZIP"""
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-        # 1. เพิ่ม KML
-        kml_data = generate_kml(proj_name, coords)
-        zip_file.writestr(f"{proj_name}.kml", kml_data)
+        zip_file.writestr(f"{proj_name}.kml", generate_kml(proj_name, coords))
         
-        # 2. เพิ่ม Excel
         excel_buffer = io.BytesIO()
         with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
             df_summary.to_excel(writer, index=False, sheet_name='NOTAM_Coordinates')
         zip_file.writestr(f"{proj_name}_Coordinates.xlsx", excel_buffer.getvalue())
         
-        # 3. เพิ่ม Shapefile (.shp, .shx, .dbf)
-        shp_buffer = io.BytesIO()
-        shx_buffer = io.BytesIO()
-        dbf_buffer = io.BytesIO()
-        
-        w = shapefile.Writer(shp=shp_buffer, shx=shx_buffer, dbf=dbf_buffer)
+        shp_b, shx_b, dbf_b = io.BytesIO(), io.BytesIO(), io.BytesIO()
+        w = shapefile.Writer(shp=shp_b, shx=shx_b, dbf=dbf_b)
         w.field('PROJECT', 'C')
         w.poly([[[coords["SW"][1], coords["SW"][0]], 
                  [coords["NW"][1], coords["NW"][0]], 
@@ -162,17 +181,17 @@ def generate_zip_package(proj_name, coords, df_summary):
         w.record(proj_name)
         w.close()
         
-        zip_file.writestr(f"{proj_name}.shp", shp_buffer.getvalue())
-        zip_file.writestr(f"{proj_name}.shx", shx_buffer.getvalue())
-        zip_file.writestr(f"{proj_name}.dbf", dbf_buffer.getvalue())
+        zip_file.writestr(f"{proj_name}.shp", shp_b.getvalue())
+        zip_file.writestr(f"{proj_name}.shx", shx_b.getvalue())
+        zip_file.writestr(f"{proj_name}.dbf", dbf_b.getvalue())
         
     return zip_buffer.getvalue()
 
 # =========================================================
-# 4. UI LAYOUT & NAVIGATION (แถบเมนูซ้ายมือ)
+# 4. SIDEBAR MENU
 # =========================================================
 with st.sidebar:
-    st.markdown("### 🚀 Mission Control")
+    st.markdown('<div class="main-header">🚀 Mission Control</div>', unsafe_allow_html=True)
     st.caption("AERIAL PHOTOGRAPHY OPS")
     st.markdown("---")
     
@@ -181,39 +200,35 @@ with st.sidebar:
         ["🌐 Generator", "📁 Archive", "📄 Templates", "⚙️ Settings"],
         label_visibility="collapsed"
     )
-    
-    st.markdown("---")
-    st.caption("NOTAM Area Generator v2.0")
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
+    st.caption("💬 Support & Help")
 
 # =========================================================
-# 5. MAIN DASHBOARD CONTENT
+# 5. MAIN CONTENT AREA
 # =========================================================
 if "Generator" in menu:
-    st.markdown('<div class="main-title">NOTAM AREA GENERATOR</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-header">NOTAM AREA GENERATOR</div>', unsafe_allow_html=True)
     
-    # แบ่งหน้าจอเป็น 2 คอลัมน์ (ซ้าย 38% : ขวา 62%)
-    col_form, col_map = st.columns([1.2, 2.0], gap="medium")
+    # 2 Columns (Left Panel : Right Map)
+    col_form, col_map = st.columns([1.1, 2.2], gap="large")
     
-    # --- คอลัมน์ซ้าย: Project Details Card ---
+    # --- Form Card (Left) ---
     with col_form:
-        st.markdown("#### PROJECT DETAILS")
-        project_name = st.text_input("Project Name", value="NOTAM_A001")
-        l7018_sheet = st.text_input("L7018 SHEET", value="5136-IV")
+        st.markdown('<div class="panel-header">PROJECT DETAILS</div>', unsafe_allow_html=True)
+        project_name = st.text_input("Project Name", value="NOTAM_A00")
+        l7018_sheet = st.text_input("L7018 SHEET", value="L7018-01")
         
-        st.markdown("#### AREA PARAMETERS")
-        sub_col1, sub_col2 = st.columns(2)
-        with sub_col1:
+        st.markdown('<div class="panel-header" style="margin-top:20px;">AREA PARAMETERS</div>', unsafe_allow_html=True)
+        sub1, sub2 = st.columns(2)
+        with sub1:
             ns_nm = st.number_input("N-S (NM)", value=5.0, step=0.5)
-        with sub_col2:
+        with sub2:
             we_nm = st.number_input("W-E (NM)", value=3.0, step=0.5)
             
-        st.markdown("<br>", unsafe_allow_html=True)
         btn_generate = st.button("🌐 Generate Flight Area")
 
-    # --- การประมวลผลเมื่อกดปุ่ม Generate ---
     coords = parse_l7018(l7018_sheet)
     
-    # จัดเตรียม DataFrame ผลลัพธ์
     df_result = pd.DataFrame([
         {"Point": "Center", "Lat_DMS": dd_to_dms(coords["CENTER"][0], True), "Lon_DMS": dd_to_dms(coords["CENTER"][1], False), "Latitude": coords["CENTER"][0], "Longitude": coords["CENTER"][1]},
         {"Point": "SW", "Lat_DMS": dd_to_dms(coords["SW"][0], True), "Lon_DMS": dd_to_dms(coords["SW"][1], False), "Latitude": coords["SW"][0], "Longitude": coords["SW"][1]},
@@ -222,54 +237,47 @@ if "Generator" in menu:
         {"Point": "SE", "Lat_DMS": dd_to_dms(coords["SE"][0], True), "Lon_DMS": dd_to_dms(coords["SE"][1], False), "Latitude": coords["SE"][0], "Longitude": coords["SE"][1]},
     ])
 
-    # --- คอลัมน์ขวา: Interactive Dark Map ---
+    # --- Map (Right) ---
     with col_map:
-        # สร้างแผนที่ CartoDB Dark Matter สไตล์การบิน
         m = folium.Map(
             location=[coords["CENTER"][0], coords["CENTER"][1]], 
             zoom_start=11, 
             tiles="CartoDB dark_matter"
         )
         
-        # วาดพิกัดขอบเขต Polygon
         boundary = [coords["SW"], coords["NW"], coords["NE"], coords["SE"], coords["SW"]]
         folium.Polygon(
             locations=boundary,
-            color="#3B82F6",
-            weight=3,
+            color="#60A5FA",
+            weight=2,
             fill=True,
             fill_color="#3B82F6",
-            fill_opacity=0.25,
+            fill_opacity=0.2,
             popup=f"Project: {project_name}"
         ).add_to(m)
         
-        # ปักหมุดจุดศูนย์กลาง Center Point
         folium.CircleMarker(
             location=coords["CENTER"],
-            radius=6,
+            radius=5,
             color="#EF4444",
             fill=True,
             fill_color="#EF4444",
             popup="Center Point"
         ).add_to(m)
         
-        # แสดงผลแผนที่
-        st_folium(m, width="100%", height=480)
-        
-    # --- ส่วนล่าง: ตารางผลลัพธ์พิกัด & ปุ่มดาวน์โหลด Package ZIP ---
+        st_folium(m, width="100%", height=520)
+
+    # --- Table & Download Package ---
     st.markdown("---")
-    res_col1, res_col2 = st.columns([2, 1])
-    
-    with res_col1:
-        st.markdown("##### 📍 Coordinates Summary (DMS)")
+    res1, res2 = st.columns([2, 1])
+    with res1:
+        st.markdown('<div class="panel-header">COORDINATES SUMMARY (DMS)</div>', unsafe_allow_html=True)
         st.dataframe(df_result[['Point', 'Lat_DMS', 'Lon_DMS', 'Latitude', 'Longitude']], use_container_width=True)
-        
-    with res_col2:
-        st.markdown("##### 📦 Export Package")
+    with res2:
+        st.markdown('<div class="panel-header">EXPORT PACKAGE</div>', unsafe_allow_html=True)
         zip_data = generate_zip_package(project_name, coords, df_result)
-        
         st.download_button(
-            label="💾 Download All (.ZIP)",
+            label="💾 Download Package (.ZIP)",
             data=zip_data,
             file_name=f"{project_name}_Package.zip",
             mime="application/zip"
@@ -277,4 +285,4 @@ if "Generator" in menu:
 
 else:
     st.markdown(f"### {menu}")
-    st.info("ส่วนนี้กำลังอยู่ระหว่างการพัฒนาเพิ่มเติมครับสุดหล่อ!")
+    st.info("ส่วนนี้กำลังอยู่ระหว่างการพัฒนาเพิ่มเติมครับ")
