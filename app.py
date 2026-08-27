@@ -1,3 +1,128 @@
+import streamlit as st
+
+# 1. ตั้งค่าหน้าจอให้เป็น Wide Screen และซ่อน Sidebar มาตรฐานถ้าต้องการ
+st.set_page_config(
+    page_title="NOTAM AREA GENERATOR",
+    page_layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# 2. ฉีด Custom CSS ปรับดีไซน์ตาม mock-up ใน Google Stitch
+st.markdown("""
+    <style>
+    /* ปรับโทนสีพื้นหลังหลักของ Streamlit */
+    .stApp {
+        background-color: #0B0E14;
+        color: #E6EDF3;
+    }
+    
+    /* แต่งกล่อง Panel ฝั่งซ้าย (Floating Card Style) */
+    div[data-testid="stVerticalBlock"] > div.element-container {
+        color: #E6EDF3;
+    }
+    
+    /* สไตล์กล่อง Project Details */
+    .css-card {
+        background-color: rgba(22, 27, 34, 0.85);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+    
+    /* แต่ง Input Field ให้เป็นดีไซน์กล่องมืด */
+    .stTextInput input, .stSelectbox div[data-baseweb="select"] {
+        background-color: #161B22 !important;
+        color: #FFFFFF !important;
+        border: 1px solid #30363D !important;
+        border-radius: 6px !important;
+    }
+    
+    /* แต่งปุ่มกดหลัก (Generate Flight Area Button) */
+    .stButton > button {
+        width: 100%;
+        background-color: #3B82F6 !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 12px 24px !important;
+        font-weight: 600 !important;
+        font-size: 16px !important;
+        box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39) !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+    .stButton > button:hover {
+        background-color: #2563EB !important;
+        transform: translateY(-2px);
+    }
+    
+    /* ปรับแต่งส่วน Header/Title */
+    .main-title {
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: #FFFFFF;
+        margin-bottom: 20px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+# ---------------------------------------------------------
+# Sidebar ด้านซ้ายสุด (Navigation Bar)
+# ---------------------------------------------------------
+with st.sidebar:
+    st.markdown("### 🚀 Mission Control")
+    st.caption("AERIAL PHOTOGRAPHY OPS")
+    st.markdown("---")
+    
+    # เมนูเลือกหน้า
+    menu = st.radio(
+        "Navigation", 
+        ["🌐 Generator", "📁 Archive", "📄 Templates", "⚙️ Settings"],
+        label_visibility="collapsed"
+    )
+
+# ---------------------------------------------------------
+# Main Body: แบ่งเป็น 2 คอลัมน์ (ฟอร์มซ้าย 35% | แผนที่ขวา 65%)
+# ---------------------------------------------------------
+if "Generator" in menu:
+    st.markdown('<div class="main-title">NOTAM AREA GENERATOR</div>', unsafe_allow_html=True)
+    
+    col_form, col_map = st.columns([1.1, 2], gap="medium")
+    
+    # --- คอลัมน์ซ้าย: Project Details Form ---
+    with col_form:
+        st.markdown('### PROJECT DETAILS')
+        
+        project_name = st.text_input("Project Name", value="NOTAM_A00")
+        l7018_sheet = st.selectbox("L7018 SHEET", ["L7018-01", "L7018-02", "L7018-03"])
+        
+        st.markdown("#### AREA PARAMETERS")
+        sub_col1, sub_col2 = st.columns(2)
+        with sub_col1:
+            ns_nm = st.number_input("N-S (NM)", value=5.0, step=0.5)
+        with sub_col2:
+            we_nm = st.number_input("W-E (NM)", value=3.0, step=0.5)
+            
+        st.markdown("<br>", unsafe_allow_html=True)
+        btn_generate = st.button("🌐 Generate Flight Area")
+
+    # --- คอลัมน์ขวา: แผนที่แสดงผลลัพธ์ (Map View) ---
+    with col_map:
+        # สมมติว่าสร้าง map object จาก folium ไว้ชื่อ m
+        # ปรับธีม Folium ให้เป็น Dark Mode ได้ด้วย tiles="CartoDB dark_matter"
+        import folium
+        from streamlit_folium import st_folium
+
+        # สร้างแผนที่โทนดำเข้มให้เข้ากับ UI
+        m = folium.Map(
+            location=[13.7563, 100.5018], 
+            zoom_start=8, 
+            tiles="CartoDB dark_matter"
+        )
+        
+        # แสดงผลแผนที่แบบเต็มความกว้างขวา
+        st_folium(m, width="100%", height=550)
 import io
 import os
 import re
