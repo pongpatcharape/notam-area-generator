@@ -1,4 +1,15 @@
+# 1. Import Streamlit เป็นตัวแรกสุด
 import streamlit as st
+
+# 2. ⚡ เรียกใช้ st.set_page_config ทันทีที่บรรทัดนี้! (ก่อน import ตัวอื่น)
+st.set_page_config(
+    page_title="NOTAM AREA GENERATOR",
+    page_icon="✈️",
+    page_layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# 3. จากนั้นค่อย Import ไลบรารีตัวอื่นๆ ทั้งหมดตามลงมา
 import io
 import zipfile
 import pandas as pd
@@ -8,17 +19,7 @@ import simplekml
 import shapefile
 
 # =========================================================
-# 1. PAGE CONFIGURATION (ต้องเป็นคำสั่ง st. อันแรกสุดเสมอ)
-# =========================================================
-st.set_page_config(
-    page_title="NOTAM AREA GENERATOR",
-    page_icon="✈️",
-    page_layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# =========================================================
-# 2. CUSTOM CSS (แต่ง UI ตาม Stitch Dark Aviation Theme)
+# 4. CUSTOM CSS (แต่ง UI ตาม Stitch Dark Aviation Theme)
 # =========================================================
 st.markdown("""
     <style>
