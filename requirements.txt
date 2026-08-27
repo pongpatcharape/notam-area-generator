@@ -1,7 +1,7 @@
 streamlit
-streamlit-folium
-folium
-geopandas
+pandas
 openpyxl
-pyproj
+folium
+streamlit-folium
 simplekml
+pyshp
